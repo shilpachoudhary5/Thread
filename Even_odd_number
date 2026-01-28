@@ -1,0 +1,59 @@
+#include <iostream>
+#include <thread>
+#include<condition_variable>
+#include<mutex>
+
+using namespace std;
+int i = 0;
+mutex mt;
+condition_variable cv;
+
+void odd()
+{
+  while(1)
+  {
+  unique_lock<mutex> lock(mt);;
+  cv.wait(lock,[](){return i%2!=0;});
+  if(i<=10) {
+  cout<<i<<endl;
+  i++;
+  }
+  if(i>10)
+  {
+    return;
+  }
+  lock.unlock();
+  cv.notify_all();
+  }
+}
+
+void even()
+{
+  while(1)
+  {
+  unique_lock<mutex> lock(mt);;
+  cv.wait(lock,[](){return i%2==0;});
+  if(i<=10){
+  cout<<i<<endl;
+  i++;
+  }
+  if(i>10)
+  {
+    return;
+  }
+  lock.unlock();
+  cv.notify_all();
+    
+  }
+}
+int main() 
+{
+  
+   thread t1odd(odd);
+   thread t2even(even);
+   
+   t1odd.join();
+   t2even.join();
+   cout << "exit"<<endl;
+   return 0;
+}
