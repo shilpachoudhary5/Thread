@@ -1,0 +1,59 @@
+#include <iostream>
+#include <thread>
+#include<mutex>
+#include<condition_variable>
+#include<queue>
+#include<chrono>
+
+
+using namespace std;
+#define BUFFER_SIZE 5
+queue<int> q;
+int index =0;
+mutex m;
+condition_variable cv;
+void producer()
+{
+  while(index<6)
+  {
+    unique_lock<mutex> lock(m);
+    cv.wait(lock,[](){return q.size()<BUFFER_SIZE;});
+    index++;
+    q.push(index);
+    cout<<"produced item :" << "buufer Size : " <<q.size()<<endl; 
+    
+    lock.unlock();
+    cv.notify_one();
+    this_thread::sleep_for(chrono::milliseconds(500));
+    
+  }
+}
+
+void consumer()
+{
+  while(index<6)
+  {
+    unique_lock<mutex> lock(m);
+    cv.wait(lock,[](){return q.size()>0;});
+    int x = q.front();
+    q.pop();
+    cout<<"consumed item :" << x << "buffer Size" << q.size()<<endl;
+    lock.unlock();
+    cv.notify_one();
+    this_thread::sleep_for(chrono::milliseconds(1000));
+  }
+}
+
+int main() 
+{
+   thread t1(producer);
+   thread t2(consumer);
+   
+   t1.join();
+   t2.join();
+   
+   cout << "exit"<<endl;
+   
+   return 0;
+    
+}
