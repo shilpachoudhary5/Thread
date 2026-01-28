@@ -10,18 +10,12 @@ condition_variable cv;
 
 void odd()
 {
-  while(1)
+  while(i<10)
   {
   unique_lock<mutex> lock(mt);;
   cv.wait(lock,[](){return i%2!=0;});
-  if(i<=10) {
   cout<<i<<endl;
   i++;
-  }
-  if(i>10)
-  {
-    return;
-  }
   lock.unlock();
   cv.notify_all();
   }
@@ -29,18 +23,12 @@ void odd()
 
 void even()
 {
-  while(1)
+  while(i<10)
   {
   unique_lock<mutex> lock(mt);;
   cv.wait(lock,[](){return i%2==0;});
-  if(i<=10){
   cout<<i<<endl;
   i++;
-  }
-  if(i>10)
-  {
-    return;
-  }
   lock.unlock();
   cv.notify_all();
     
@@ -54,6 +42,6 @@ int main()
    
    t1odd.join();
    t2even.join();
-   cout << "exit"<<endl;
-   return 0;
+    cout << "exit"<<endl;
+    return 0;
 }
