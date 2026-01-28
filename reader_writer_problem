@@ -1,0 +1,84 @@
+///
+//Here used index just to control loop execution. 
+
+#include <iostream>
+#include <thread>
+#include<mutex>
+#include<condition_variable>
+#include<queue>
+#include<chrono>
+
+
+using namespace std;
+
+int item = 0;
+int index = 0;
+int reader_count = 0;
+bool writer_active = false;
+mutex m;
+condition_variable cv_read;
+condition_variable cv_write;
+
+void writer()
+{
+  while(index<6)
+  {
+    {
+     unique_lock<mutex> lock(m);
+     cv_write.wait(lock,[](){return reader_count==0 && !writer_active;});
+     writer_active = true;
+     item = 10 ;
+     index++;
+     this_thread::sleep_for(chrono::milliseconds(500));
+     cout<<"writer has written data :" << item << endl;
+     
+    }
+    
+    {
+      unique_lock<mutex> lock(m);
+      writer_active = false;
+      cv_read.notify_one();
+      cv_write.notify_one();
+    }  
+  }
+}
+
+void reader()
+{
+  while(index<6)
+  {
+    {
+     unique_lock<mutex> lock(m);
+     this_thread::sleep_for(chrono::milliseconds(500));
+     cv_read.wait(lock,[](){return !writer_active;});
+     reader_count++;
+     index++;
+     
+     cout<<"reading data :" << item << endl;
+     //this_thread::sleep_for(chrono::milliseconds(500));
+    }
+    
+    {
+     unique_lock<mutex> lock(m);
+     reader_count--;
+     if(reader_count==0)
+       cv_write.notify_one();
+     this_thread::sleep_for(chrono::milliseconds(1000));
+    }
+  }
+}
+
+int main() 
+{
+   thread t2(writer);
+   thread t1(reader);
+   
+   
+   t1.join();
+   t2.join();
+   
+   cout << "exit"<<endl;
+   
+   return 0;
+    
+}
