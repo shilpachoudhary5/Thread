@@ -1,0 +1,84 @@
+///
+//Here used index just to control loop execution. 
+
+#include <iostream>
+#include <thread>
+#include<mutex>
+#include<condition_variable>
+#include<queue>
+#include<chrono>
+#include<functional> 
+
+
+using namespace std;
+
+class ThreadPool
+{
+  int capacity;
+  vector<thread> workers;
+  queue<function<void()>> taskq;
+  condition_variable cv;
+  mutex mt; 
+  bool stop = false;
+  public :
+  
+  ThreadPool(int x):capacity(x)
+  {
+    for(int i=0;i<capacity;i++)
+    {
+      workers.emplace([](){
+        while(1)
+        {
+          function<void()> task;
+          {
+          unique_lock<mutex> lock(mt);
+          cv.wait(lock,[](){!taskq.empty() || !stop;});
+          if(stop && tasks.empty())
+          {
+            return; 
+          }
+          task = taskq.front();
+          taskq.pop();
+          }
+          task();
+        }
+      })
+      
+    }
+    
+  }
+  
+  
+  ~ThreadPool()
+  {
+    unique_lock<mutex> lock(mt);
+     stop = true;
+    cv.notify_all();
+    for(int i =0;i<capacity;i++)
+    {
+      workers[i].join();
+    }
+  }
+  
+  void enqueue(function<void()> task)
+  {
+    unique_lock<mutex> lock(mt);
+    taskq.emplace(task);
+    cv.notify_one();
+  }
+  
+};
+int main() 
+{
+   ThreadPool tp(5); 
+   for(int j=0;j<4;j++)
+   {
+     tp.enqueue([i](){cout<<"task :" <<i << "enqued"; 
+       this_thread::sleep_for(chrono::milliseconds(500));}
+     
+     )
+   }
+   
+   return 0;
+    
+}
