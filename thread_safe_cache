@@ -1,0 +1,78 @@
+#include <iostream>
+#include<mutex>
+#include <functional>
+#include <thread>
+#include <list>
+
+using namespace std;
+
+class cacheT
+{
+  list<pair<int,int>> dl;
+  unordered_map<int,list<pair<int,int>>::iterator> mp;
+  mutex mt; 
+  int cap;
+  
+  public :
+  cacheT(int x):cap(x)
+  {
+    cout<<"intialized cache with capacity :"<< cap << endl; 
+  }
+  
+  void put(int key,int item)
+  {
+    if(mp.find(key)!=mp.end())
+    {
+      dl.splice(dl.begin(),dl,mp[key]);
+    }
+    else
+    {
+      dl.push_front({key,item});
+      mp[key]=dl.begin();
+      while(dl.size()>=cap)
+      {
+        cout<< "cache is full"<<endl; 
+       
+        pair<int,int> p = dl.back();
+        cout<< "remove key" << p.first<<endl;
+        dl.pop_back();
+        mp.erase(p.first);
+      }
+    }
+  }
+  
+  int get(int key)
+  {
+    unique_lock<mutex> lock(mt); 
+    if(mp.find(key)!=mp.end())
+    {
+      dl.splice(dl.begin(),dl,mp[key]);
+      pair<int,int> p = dl.front();
+      return p.second;
+    }
+    else 
+    {
+      cout<<"key is not present"<<endl; 
+      return -1; 
+    }
+    
+  }
+  
+};
+
+int main() 
+{
+  cacheT c(5); 
+  c.put(1,2);
+  c.put(3,5);
+  c.put(4,2);
+  cout<<c.get(4)<<endl;
+  c.put(5,5);
+  c.put(6,2);
+  c.put(7,5);
+  cout<<c.get(1)<<endl;
+  cout<<c.get(4)<<endl;
+  
+  return 0; 
+    
+}
